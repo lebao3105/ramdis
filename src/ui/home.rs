@@ -1,19 +1,19 @@
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::style::{Style, Stylize};
 use ratatui::text::Line;
-use ratatui::widgets::{Block, List, Paragraph, Row, Table, TableState, Cell};
+use ratatui::widgets::{Block, Cell, List, Paragraph, Row, Table, TableState};
 
 use rand::prelude::*;
 use std::collections::HashMap;
 
-use crate::{ui::UIPage, CurrentScreen, App};
+use crate::{CurrentScreen, ui::UIPage};
 
 #[derive(Debug)]
 pub struct HomePage {
     layout: Layout,
     rng: ThreadRng,
     table_state: TableState,
-    random_results: HashMap<String, u8>
+    random_results: HashMap<String, u8>,
 }
 
 impl UIPage for HomePage {
@@ -24,16 +24,22 @@ impl UIPage for HomePage {
                 .constraints([Constraint::Percentage(30), Constraint::Percentage(70)]),
             rng: rand::rng(),
             table_state: TableState::new(),
-            random_results: HashMap::new()
+            random_results: HashMap::new(),
         }
     }
 
-    fn ready_ui(&mut self, frame: &mut ratatui::Frame, app: &mut App) {
+    fn ready_ui(
+        &mut self,
+        frame: &mut ratatui::Frame,
+        choices: &[String],
+        current_screen: &CurrentScreen,
+    ) {
         let splits = self.layout.split(frame.area());
 
         {
             let left_title = Line::from("Options").bold().centered();
-            let list = List::new(app.choices.clone()).white()
+            let list = List::new(choices.to_vec())
+                .white()
                 .highlight_style(Style::new().yellow())
                 .highlight_symbol("=>")
                 .block(Block::bordered().title(left_title));
@@ -45,33 +51,39 @@ impl UIPage for HomePage {
         {
             let right_title = Line::from("ramdis").bold().centered();
 
-            if app.current_screen == CurrentScreen::Deciding
-            {
-                let choosen = self.random_results.entry(
-                    app.choices.choose(&mut self.rng).expect("Error randomizing").to_string()
-                ).or_insert(0);
+            if *current_screen == CurrentScreen::Deciding {
+                let choosen = self
+                    .random_results
+                    .entry(
+                        choices
+                            .choose(&mut self.rng)
+                            .expect("Error randomizing")
+                            .to_string(),
+                    )
+                    .or_insert(0);
                 *choosen += 1;
 
                 let mut rows = vec![];
-                for (key, value) in &self.random_results
-                {
+                for (key, value) in &self.random_results {
                     rows.push(Row::new(vec![key.clone(), value.to_string()]));
                 }
 
                 let table = Table::new(
-                    rows, [Constraint::Percentage(70), Constraint::Percentage(30)])
-                    .block(Block::bordered().title(right_title))
-                    .highlight_symbol(">>")
-                    .header(["Name", "Count"]
-                                .into_iter()
-                                .map(Cell::from)
-                                .collect::<Row>()
-                                .height(1));
+                    rows,
+                    [Constraint::Percentage(70), Constraint::Percentage(30)],
+                )
+                .block(Block::bordered().title(right_title))
+                .highlight_symbol(">>")
+                .header(
+                    ["Name", "Count"]
+                        .into_iter()
+                        .map(Cell::from)
+                        .collect::<Row>()
+                        .height(1),
+                );
                 frame.render_stateful_widget(table, splits[1], &mut self.table_state);
-            }
-            else {
-                let text =
-                    "This is not something related to ram-disk.\n\
+            } else {
+                let text = "This is not something related to ram-disk.\n\
                     This. Is. Distro. Hopping. Killer.\n\n\n\
                     Press `Ctrl-C` to quit.\n\
                     Press `Ctrl-R` to start randomizing.\n\
@@ -88,7 +100,7 @@ impl UIPage for HomePage {
                     Paragraph::new(text)
                         .block(Block::bordered().title(right_title))
                         .centered(),
-                    splits[1]
+                    splits[1],
                 )
             }
         } // End Right Pane
