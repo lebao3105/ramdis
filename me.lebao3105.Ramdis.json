@@ -1,0 +1,34 @@
+{
+	"app-id": "me.lebao3105.Ramdis",
+	"runtime": "org.freedesktop.Platform",
+	"runtime-version": "24.08",
+	"sdk": "org.freedesktop.Sdk",
+	"sdk-extensions": [
+		"org.freedesktop.Sdk.Extension.rust-stable"
+	],
+	"command": "ramdis",
+	"build-options": {
+		"append-path": "/usr/lib/sdk/rust-stable/bin",
+		"env": {
+			"CARGO_HOME": "/run/build/ramdis/cargo"
+		}
+	},
+	"modules": [
+		{
+			"name": "ramdis",
+			"buildsystem": "simple",
+			"build-commands": [
+				"cargo --offline fetch --manifest-path Cargo.toml --verbose",
+				"cargo --offline build --release --verbose",
+				"install -Dm755 ./target/release/ramdis -t /app/bin"
+			],
+			"sources": [
+				{
+					"type": "dir",
+					"path": "./"
+				},
+				"cargo-sources.json"
+			]
+		}
+	]
+}
