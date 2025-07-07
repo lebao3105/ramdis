@@ -171,15 +171,18 @@ impl App<'_> {
             Input {
                 key: Key::Enter, ..
             } => match self.current_screen {
-                CurrentScreen::Creating | CurrentScreen::Editing => {
+                CurrentScreen::Creating => {
                     self.choices.insert(
-                        self.current_index
-                            .parse::<usize>()
-                            .expect("App.current_index is supposed to be always an integer"),
+                        self.current_index_to_int(),
                         self.current_input.clone(),
                     );
                     self.switch_to_main_screen();
-                }
+                },
+                CurrentScreen::Editing => {
+                    let idx = self.current_index_to_int();
+                    self.choices[idx] = self.current_input.clone();
+                    self.switch_to_main_screen();
+                },
                 _ => {}
             },
             input => match self.current_emode {
@@ -196,6 +199,11 @@ impl App<'_> {
         } else if let CurrentScreen::Main = self.current_screen {
             self.current_screen = CurrentScreen::Exiting;
         }
+    }
+
+    fn current_index_to_int(&self) -> usize {
+        return self.current_index.parse::<usize>()
+            .expect("App.current_index is supposed to be always an integer")
     }
 
     fn switch_to_main_screen(&mut self) {

@@ -1,5 +1,5 @@
 use ratatui::layout::{Constraint, Direction, Layout};
-use ratatui::style::{Style, Stylize};
+use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Cell, List, Paragraph, Row, Table, TableState};
 
@@ -14,6 +14,8 @@ pub struct HomePage {
     rng: ThreadRng,
     table_state: TableState,
     random_results: HashMap<String, u8>,
+    reached_target: bool,
+    target: u8,
 }
 
 impl UIPage for HomePage {
@@ -25,6 +27,8 @@ impl UIPage for HomePage {
             rng: rand::rng(),
             table_state: TableState::new(),
             random_results: HashMap::new(),
+            reached_target: false,
+            target: 3,
         }
     }
 
@@ -52,16 +56,22 @@ impl UIPage for HomePage {
             let right_title = Line::from("ramdis").bold().centered();
 
             if *current_screen == CurrentScreen::Deciding {
-                let choosen = self
-                    .random_results
-                    .entry(
-                        choices
-                            .choose(&mut self.rng)
-                            .expect("Error randomizing")
-                            .to_string(),
-                    )
-                    .or_insert(0);
-                *choosen += 1;
+                if !self.reached_target {
+                    let choosen = self
+                        .random_results
+                        .entry(
+                            choices
+                                .choose(&mut self.rng)
+                                .expect("Error randomizing")
+                                .to_string(),
+                        )
+                        .or_insert(0);
+                    *choosen += 1;
+
+                    if self.target == *choosen {
+                        self.reached_target = true;
+                    }
+                }
 
                 let mut rows = vec![];
                 for (key, value) in &self.random_results {
@@ -79,7 +89,8 @@ impl UIPage for HomePage {
                         .into_iter()
                         .map(Cell::from)
                         .collect::<Row>()
-                        .height(1),
+                        .height(1)
+                        .style(Style::new().fg(Color::LightBlue)),
                 );
                 frame.render_stateful_widget(table, splits[1], &mut self.table_state);
             } else {
