@@ -11,5 +11,5 @@ crossterm = { version = "0.28.1", features = ["event-stream"] }
 futures = "0.3.31"
 ratatui = "0.29.0"
 rand = "0.9.2"
-tokio = { version = "1.40.0", features = ["full"] }
+tokio = { version = "1.47.1", features = ["full"] }
 tui-textarea = "0.7.0"
