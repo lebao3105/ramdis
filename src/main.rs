@@ -1,8 +1,8 @@
-use color_eyre::Result;
-use crossterm::event::{Event, EventStream, KeyEvent};
-use futures::{FutureExt, StreamExt};
+use ratatui::crossterm::event;
+use ratatui::crossterm::event::{Event, KeyEvent, KeyEventKind};
 use ratatui::prelude::*;
 
+use std::io;
 use std::vec::Vec;
 use tui_textarea::{Input, Key};
 
@@ -11,12 +11,12 @@ use crate::ui::editors::EditPage;
 use crate::ui::home::HomePage;
 use crate::ui::{UIPage, draw_ui};
 
-#[tokio::main]
-async fn main() -> color_eyre::Result<()> {
-    color_eyre::install()?;
+#[allow(unused_must_use)]
+fn main() -> io::Result<()> {
+    color_eyre::install();
 
     let mut terminal = ratatui::init();
-    let result = App::new().run(&mut terminal).await;
+    let result = App::new().run(&mut terminal);
 
     ratatui::restore();
     result
@@ -25,7 +25,6 @@ async fn main() -> color_eyre::Result<()> {
 #[derive(Debug)]
 pub struct App<'a> {
     running: bool,
-    event_stream: EventStream,
     choices: Vec<String>,
 
     home_page: HomePage,
@@ -65,7 +64,6 @@ impl App<'_> {
     pub fn new() -> Self {
         App {
             running: false,
-            event_stream: EventStream::new(),
             choices: Vec::new(),
 
             home_page: HomePage::default(),
@@ -80,26 +78,22 @@ impl App<'_> {
         }
     }
 
-    pub async fn run<B: Backend>(mut self, terminal: &mut Terminal<B>) -> Result<()> {
+    pub fn run<B: Backend>(mut self, terminal: &mut Terminal<B>) -> io::Result<()> {
         self.running = true;
         while self.running {
             terminal.draw(|frame| draw_ui(&mut self, frame))?;
-            self.handle_crossterm_events().await?;
+            self.handle_events()?;
         }
         Ok(())
     }
 
-    async fn handle_crossterm_events(&mut self) -> Result<()> {
-        tokio::select! {
-            event = self.event_stream.next().fuse() => {
-                if let Some(Ok(Event::Key(key))) = event {
-                    self.on_key_event(key);
-                }
+    fn handle_events(&mut self) -> io::Result<()> {
+        match event::read()? {
+            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                self.on_key_event(key_event)
             }
-            _ = tokio::time::sleep(tokio::time::Duration::from_millis(100)) => {
-                // Sleep for a short duration to avoid busy waiting.
-            }
-        }
+            _ => {}
+        };
         Ok(())
     }
 
